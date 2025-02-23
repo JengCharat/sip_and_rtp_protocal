@@ -1,5 +1,7 @@
 import socket
 
+from pyVoIP.VoIP import InvalidStateError, VoIPPhone
+
 # create socket object
 s = socket.socket()
 # define port
