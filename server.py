@@ -1,22 +1,28 @@
-import socket
-
 from pyVoIP.VoIP import InvalidStateError, VoIPPhone
 
-# create socket object
-s = socket.socket()
-# define port
-port = 12345
-# bind to the port
-s.bind(("", port))
 
-# 5 mean number of connection in queue
-s.listen(5)
+def answer(
+    call,
+):  # This will be your callback function for when you receive a phone call.
+    try:
+        call.answer()
+        call.hangup()
+    except InvalidStateError:
+        pass
 
-while True:
-    # establish connection with client
-    c, addr = s.accept()
-    # send message
-    c.send("test connection".encode())
-    # clode the connection
-    c.close()
-    break
+
+if __name__ == "__main__":
+    phone = VoIPPhone(
+        "192.168.10.97",
+        5060,
+        "jeng",
+        "",
+        callCallback=answer,
+        myIP="192.168.11.252",
+        sipPort=5060,
+        rtpPortLow=10000,
+        rtpPortHigh=10000,
+    )
+    phone.start()
+    input("Press enter to disable the phone")
+    phone.stop()
