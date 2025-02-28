@@ -1,1 +1,5 @@
  SIP is based on an HTTP-like request/respons
+
+
+
+ A server SHOULD be prepared to receive requests on any IP address, port and transport combination 
