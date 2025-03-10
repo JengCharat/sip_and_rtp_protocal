@@ -1,0 +1,2 @@
+PyAudio==0.2.14
+pyVoIP==1.6.8
