@@ -3,3 +3,7 @@
 
 
  A server SHOULD be prepared to receive requests on any IP address, port and transport combination 
+
+
+
+journalctl -u kamailio --no-pager | tail -n 50
