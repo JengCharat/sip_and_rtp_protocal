@@ -16,12 +16,17 @@ p = pyaudio.PyAudio()
 FORMAT = pyaudio.paInt16  # ใช้ 16-bit PCM
 CHANNELS = 1  # Mono
 RATE = 8000  # Sampling rate 8kHz (ใช้สำหรับ PCMU)
-CHUNK = 40  # จำนวนข้อมูลที่จับได้ในแต่ละครั้ง (แต่ละช่องเวลา 10ms)
+CHUNK = 200  # จำนวนข้อมูลที่จับได้ในแต่ละครั้ง (แต่ละช่องเวลา 10ms)
 WIDTH = 2  # ขนาดข้อมูลแต่ละ sample 2 byte
 
-# เปิด Stream สำหรับจับเสียงจากไมโครโฟน
-stream = p.open(
+# เปิด Stream สำหรับจับเสียงจากไมโครโฟน (input stream)
+input_stream = p.open(
     format=FORMAT, channels=CHANNELS, rate=RATE, input=True, frames_per_buffer=CHUNK
+)
+
+# เปิด Stream สำหรับ output เพื่อเล่นเสียงที่ได้รับจาก RTP
+output_stream = p.open(
+    format=FORMAT, channels=CHANNELS, rate=RATE, output=True, frames_per_buffer=CHUNK
 )
 
 # สร้าง UDP socket สำหรับ SIP
@@ -72,14 +77,7 @@ try:
 
     while True:
         # อ่านข้อมูลเสียงจากไมโครโฟน
-        try:
-            audio_data = stream.read(CHUNK, exception_on_overflow=False)
-        except IOError as e:
-            print(f"❌ Error while reading audio data: {e}")
-            continue
-
-        if not audio_data:
-            continue
+        audio_data = input_stream.read(CHUNK)
 
         # สร้าง RTP packet (เริ่มต้น RTP header)
         rtp_packet = b"\x80\x78\x00\x01" + audio_data  # RTP header + ข้อมูลเสียง
@@ -88,16 +86,23 @@ try:
         rtp_sock.sendto(rtp_packet, (SIP_SERVER, RTP_PORT))
         time.sleep(0.01)  # เพิ่มเวลาหน่วงทุก 10ms
 
+        # รับ RTP Audio packets
+        rtp_data, _ = rtp_sock.recvfrom(1024)
+        output_stream.write(rtp_data[4:])  # ข้าม RTP header เพื่อให้เล่นเสียง
+
 except Exception as e:
     print(f"❌ Error: {e}")
 finally:
     # ปิด Stream และ socket
     try:
-        if stream.is_active():
-            stream.stop_stream()
+        if input_stream.is_active():
+            input_stream.stop_stream()
+        if output_stream.is_active():
+            output_stream.stop_stream()
     except OSError:
         print("Stream is not open.")
-    stream.close()
+    input_stream.close()
+    output_stream.close()
     p.terminate()
     sock.close()
     rtp_sock.close()

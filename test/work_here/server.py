@@ -1,4 +1,5 @@
 import socket
+import threading
 
 SIP_PORT = 5060
 RTP_PORT = 4000  # พอร์ตรับเสียง RTP
@@ -14,21 +15,34 @@ rtp_sock.bind(("0.0.0.0", RTP_PORT))
 print(f"📡 SIP Server is running on port {SIP_PORT}")
 print(f"🎙️ RTP Server is listening on port {RTP_PORT}")
 
-while True:
-    try:
-        data, addr = sip_sock.recvfrom(1024)
-        request = data.decode()
-        print(f"📥 Received SIP request from {addr}:\n{request}")
 
-        if request.startswith("INVITE"):
-            # ตอบกลับ 100 Trying
-            sip_sock.sendto(b"SIP/2.0 100 Trying\r\n\r\n", addr)
+def handle_rtp():
+    while True:
+        try:
+            rtp_data, rtp_addr = rtp_sock.recvfrom(2048)
+            print(f"🔊 Received RTP audio from {rtp_addr}")
+            # ส่ง RTP data ไปยัง client
+            rtp_sock.sendto(rtp_data, rtp_addr)
+        except Exception as e:
+            print(f"❌ Error: {e}")
 
-            # ตอบกลับ 180 Ringing
-            sip_sock.sendto(b"SIP/2.0 180 Ringing\r\n\r\n", addr)
 
-            # ตอบกลับ 200 OK (รับสาย)
-            sip_response = f"""SIP/2.0 200 OK
+def handle_sip():
+    while True:
+        try:
+            data, addr = sip_sock.recvfrom(1024)
+            request = data.decode()
+            print(f"📥 Received SIP request from {addr}:\n{request}")
+
+            if request.startswith("INVITE"):
+                # ตอบกลับ 100 Trying
+                sip_sock.sendto(b"SIP/2.0 100 Trying\r\n\r\n", addr)
+
+                # ตอบกลับ 180 Ringing
+                sip_sock.sendto(b"SIP/2.0 180 Ringing\r\n\r\n", addr)
+
+                # ตอบกลับ 200 OK (รับสาย)
+                sip_response = f"""SIP/2.0 200 OK
 Via: SIP/2.0/UDP {addr[0]}:5060
 From: <sip:caller@{addr[0]}>
 To: <sip:receiver@{addr[0]}>;tag=12345
@@ -46,13 +60,24 @@ t=0 0
 m=audio {RTP_PORT} RTP/AVP 0
 a=rtpmap:0 PCMU/8000
 """
-            sip_sock.sendto(sip_response.encode(), addr)
-            print("✅ Sent SIP 200 OK response")
 
-            # รับเสียง RTP
-            print("🎧 Waiting for RTP audio...")
-            rtp_data, rtp_addr = rtp_sock.recvfrom(2048)
-            print(f"🔊 Received RTP audio from {rtp_addr}")
+                sip_sock.sendto(sip_response.encode(), addr)
+                print("✅ Sent SIP 200 OK response")
+                print("🎧 Waiting for RTP audio...")
 
-    except Exception as e:
-        print(f"❌ Error: {e}")
+        except Exception as e:
+            print(f"❌ Error: {e}")
+
+
+# เริ่ม thread สำหรับการจัดการ SIP และ RTP
+sip_thread = threading.Thread(target=handle_sip)
+sip_thread.daemon = True
+sip_thread.start()
+
+rtp_thread = threading.Thread(target=handle_rtp)
+rtp_thread.daemon = True
+rtp_thread.start()
+
+# รอให้โปรแกรมทำงานไปเรื่อยๆ
+while True:
+    pass
