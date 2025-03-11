@@ -3,11 +3,11 @@ import time
 
 import pyaudio
 
-SIP_SERVER = "192.168.11.252"  # IP ของ SIP Server
-SIP_PORT = 5060
+SIP_SERVER = "192.168.10.97"  # IP ของ SIP Server
+SIP_PORT = 5061
 CLIENT_IP = "192.168.11.252"  # IP ของ Client
-CLIENT_PORT = 5061  # SIP Client ใช้พอร์ตนี้
-RTP_PORT = 4000  # พอร์ตที่ใช้ส่งเสียง RTP
+CLIENT_PORT = 5062  # SIP Client ใช้พอร์ตนี้
+RTP_PORT = 4001  # พอร์ตที่ใช้ส่งเสียง RTP
 
 # ตั้งค่า PyAudio สำหรับจับเสียงจากไมโครโฟน
 p = pyaudio.PyAudio()
