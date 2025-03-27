@@ -76,6 +76,7 @@ try:
 
     print("🎙️ Sending RTP audio packets...")
 
+    # รับ RTP Audio packets จากเซิร์ฟเวอร์
     while True:
         # อ่านข้อมูลเสียงจากไมโครโฟน
         audio_data = input_stream.read(CHUNK)

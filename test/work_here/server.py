@@ -1,8 +1,22 @@
 import socket
 import threading
 
+import pyaudio
+
 SIP_PORT = 5060
 RTP_PORT = 4000  # พอร์ตรับเสียง RTP
+
+# ตั้งค่า PyAudio สำหรับจับเสียงจากไมโครโฟน
+p = pyaudio.PyAudio()
+FORMAT = pyaudio.paInt16  # ใช้ 16-bit PCM
+CHANNELS = 1  # Mono
+RATE = 8000  # Sampling rate 8kHz (ใช้สำหรับ PCMU)
+CHUNK = 200  # จำนวนข้อมูลที่จับได้ในแต่ละครั้ง (แต่ละช่องเวลา 10ms)
+
+# เปิด Stream สำหรับจับเสียงจากไมโครโฟน (input stream)
+input_stream = p.open(
+    format=FORMAT, channels=CHANNELS, rate=RATE, input=True, frames_per_buffer=CHUNK
+)
 
 # สร้าง UDP socket สำหรับ SIP
 sip_sock = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
@@ -67,6 +81,19 @@ a=rtpmap:0 PCMU/8000
                 sip_sock.sendto(sip_response.encode(), addr)
                 print("✅ Sent SIP 200 OK response")
                 print("🎧 Waiting for RTP audio...")
+
+                # เริ่มจับเสียงจากไมโครโฟนและส่งไปยัง client
+                while True:
+                    audio_data = input_stream.read(CHUNK)
+
+                    # สร้าง RTP packet (เริ่มต้น RTP header)
+                    rtp_packet = (
+                        b"\x80\x78\x00\x01" + audio_data
+                    )  # RTP header + ข้อมูลเสียง
+
+                    # ส่ง RTP packet ไปที่ SIP Client
+                    rtp_sock.sendto(rtp_packet, addr)
+                    print("🎙️ Sent RTP audio packet to client")
 
         except Exception as e:
             print(f"❌ Error: {e}")
