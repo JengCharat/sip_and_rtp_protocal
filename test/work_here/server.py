@@ -1,5 +1,6 @@
 import socket
 import threading
+import time
 
 import pyaudio
 
@@ -11,7 +12,7 @@ p = pyaudio.PyAudio()
 FORMAT = pyaudio.paInt16  # ใช้ 16-bit PCM
 CHANNELS = 1  # Mono
 RATE = 8000  # Sampling rate 8kHz (ใช้สำหรับ PCMU)
-CHUNK = 200  # จำนวนข้อมูลที่จับได้ในแต่ละครั้ง (แต่ละช่องเวลา 10ms)
+CHUNK = 1024  # จำนวนข้อมูลที่จับได้ในแต่ละครั้ง (แต่ละช่องเวลา 10ms)
 
 # เปิด Stream สำหรับจับเสียงจากไมโครโฟน (input stream)
 input_stream = p.open(
@@ -84,19 +85,28 @@ a=rtpmap:0 PCMU/8000
 
                 # เริ่มจับเสียงจากไมโครโฟนและส่งไปยัง client
                 while True:
-                    audio_data = input_stream.read(CHUNK)
+                    try:
+                        audio_data = input_stream.read(CHUNK)
+                        if len(audio_data) != CHUNK:
+                            continue  # ข้ามถ้าข้อมูลที่ได้รับไม่ครบ
 
-                    # สร้าง RTP packet (เริ่มต้น RTP header)
-                    rtp_packet = (
-                        b"\x80\x78\x00\x01" + audio_data
-                    )  # RTP header + ข้อมูลเสียง
+                        # สร้าง RTP packet (เริ่มต้น RTP header)
+                        rtp_packet = (
+                            b"\x80\x78\x00\x01" + audio_data
+                        )  # RTP header + ข้อมูลเสียง
 
-                    # ส่ง RTP packet ไปที่ SIP Client
-                    rtp_sock.sendto(rtp_packet, addr)
-                    print("🎙️ Sent RTP audio packet to client")
+                        # ส่ง RTP packet ไปที่ SIP Client
+                        rtp_sock.sendto(rtp_packet, addr)
+                        print("🎙️ Sent RTP audio packet to client")
+                        time.sleep(0.01)  # เพิ่มเวลาหน่วงเพื่อให้ระบบจับข้อมูลได้ดีขึ้น
+
+                    except IOError as e:
+                        print(f"❌ Error: {e}")
+                    except Exception as e:
+                        print(f"❌ Unexpected Error: {e}")
 
         except Exception as e:
-            print(f"❌ Error: {e}")
+            print(f"❌ Error in handle_sip: {e}")
 
 
 # เริ่ม thread สำหรับการจัดการ SIP และ RTP

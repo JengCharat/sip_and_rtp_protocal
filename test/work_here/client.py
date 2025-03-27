@@ -16,7 +16,7 @@ p = pyaudio.PyAudio()
 FORMAT = pyaudio.paInt16  # ใช้ 16-bit PCM
 CHANNELS = 1  # Mono
 RATE = 8000  # Sampling rate 8kHz (ใช้สำหรับ PCMU)
-CHUNK = 200  # จำนวนข้อมูลที่จับได้ในแต่ละครั้ง (แต่ละช่องเวลา 10ms)
+CHUNK = 1024  # จำนวนข้อมูลที่จับได้ในแต่ละครั้ง (แต่ละช่องเวลา 10ms)
 WIDTH = 2  # ขนาดข้อมูลแต่ละ sample 2 byte
 
 # เปิด Stream สำหรับจับเสียงจากไมโครโฟน (input stream)
