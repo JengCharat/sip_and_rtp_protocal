@@ -19,10 +19,13 @@ print(f"🎙️ RTP Server is listening on port {RTP_PORT}")
 def handle_rtp():
     while True:
         try:
+            # รับ RTP data จากไคลเอนต์
             rtp_data, rtp_addr = rtp_sock.recvfrom(2048)
             print(f"🔊 Received RTP audio from {rtp_addr}")
-            # ส่ง RTP data ไปยัง client
+
+            # ส่ง RTP data กลับไปยังไคลเอนต์ (การทำ echo ของ RTP)
             rtp_sock.sendto(rtp_data, rtp_addr)
+            print(f"🔄 Echoed RTP audio back to {rtp_addr}")
         except Exception as e:
             print(f"❌ Error: {e}")
 
